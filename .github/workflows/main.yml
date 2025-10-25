@@ -1,0 +1,75 @@
+name: GH Pages Deploy
+
+on:
+  push:
+    branches: [main]
+
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 🛎
+        uses: actions/checkout@v2
+
+      - name: Install dependencies 🔧
+        run: make install
+
+      - name: Add paths
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+        run: echo "::add-path::$GITHUB_WORKSPACE/docs"
+
+      - name: Build 🏗️
+        run: make build
+
+      - name: 'Get Previous tag'
+        id: previoustag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+        with:
+          fallback: v1.0 # Optional fallback tag to use when no tag can be found
+
+      # # ePub upload as a Github release asset
+      # - name: Create Release
+      #   continue-on-error: true
+      #   id: create-release
+      #   uses: actions/create-release@v1.0.0
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ steps.previoustag.outputs.tag }}
+      #     release_name: Release ${{ steps.previoustag.outputs.tag }}
+      #     draft: false
+      #     prerelease: false
+
+      - uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          omitBody: true
+          omitBodyDuringUpdate: true
+          replacesArtifacts: true
+          removeArtifacts: true
+          draft: false
+          tag: ${{ steps.previoustag.outputs.tag }}
+          artifacts: "./docs/book/epub/Dundie API - Curso Python LINUXtips.epub"
+
+      # - name: Upload epub to release
+      #   id: upload-release-asset
+      #   uses: actions/upload-release-asset@v1.0.1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     upload_url: ${{ steps.create-release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
+      #     asset_path: "./docs/book/epub/Dundie API - Curso Python LINUXtips.epub"
+      #     asset_name: dundie-api-curso-python-linuxtips-bruno-rocha.epub
+      #     asset_content_type: application/epub+zip
+
+      - name: Deploy to GitHub Pages 🚀
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book/html
