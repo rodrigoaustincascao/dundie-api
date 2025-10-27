@@ -6,6 +6,7 @@ from sqlmodel import Session, select
 from .config import settings
 from .db import engine
 from .models import User
+from .models.user import generate_username
 
 main = typer.Typer(name="dundie CLI", add_completion=False)
 
@@ -42,3 +43,28 @@ def user_list():
         for user in users:
             table.add_row(*[getattr(user, field) for field in fields])
     Console().print(table)
+
+@main.command()
+def user_create(
+    name: str,
+    email: str,
+    password: str,
+    dept: str,
+    username: str | None = None,
+    currency: str = "USD",
+):
+    """Create a new user"""
+    with Session(engine) as session:
+        user = User(
+            name=name,
+            username=username or generate_username(name),
+            email=email,
+            password=password,
+            dept=dept,
+            currency=currency
+        )
+        session.add(user)
+        session.commit()
+        session.refresh(user)
+        typer.echo(f"Created user {user.username}")
+        return user
