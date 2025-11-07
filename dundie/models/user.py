@@ -1,7 +1,8 @@
 """User related data models."""
 from typing import Optional
+from fastapi import HTTPException, status
 from sqlmodel import Field, SQLModel
-from dundie.security import HashedPassword
+from dundie.security import HashedPassword, get_password_hash
 from pydantic import BaseModel, root_validator
 
 
@@ -55,3 +56,27 @@ class UserRequest(BaseModel):
         if values.get("username") is None:
             values["username"] = generate_username(values["name"])
         return values
+    
+class UserProfilePatchReuest(BaseModel):
+    """Serializer for when client wants to partially update user."""
+    avatar: Optional[str] = None
+    bio: Optional[str] = None
+
+class UserPasswordPatchRequest(BaseModel):
+    password: str
+    password_confirm: str
+
+    @root_validator()
+    def check_password_match(cls, values):
+        """Checks if password and password_confirm match"""
+        if values.get("password") != values.get("password_confirm"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords do not match",
+            )
+        return values
+    
+    @property
+    def hashed_password(self) -> str:
+        """Returns hashed password"""
+        return get_password_hash(self.password)

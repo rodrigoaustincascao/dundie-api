@@ -1,0 +1,23 @@
+{
+    "editor.rulers": [
+        80
+    ],
+    "python.languageServer": "Pylance",
+    "python.analysis.autoImportCompletions": true,
+    "python.defaultInterpreterPath": ".venv/bin/python", // ou o caminho do seu ambiente
+    // "python.analysis.extraPaths": ["src"]  // se seu código estiver fora da raiz
+    // Define o formatador padrão (você pode usar "black", "yapf" ou "autopep8")
+    "python.formatting.provider": "black",
+    // Executa o formatador automaticamente ao salvar
+    "editor.formatOnSave": true,
+    // Define o tamanho de indentação
+    "editor.tabSize": 4,
+    // --- 🧩 Extras úteis ---
+    // Mostra docstrings e tipos ao passar o mouse
+    "editor.hover.enabled": true,
+    // Sugere imports e snippets com prioridade
+    "editor.suggestSelection": "first",
+    // Se quiser linting com flake8 (opcional):
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
+}
