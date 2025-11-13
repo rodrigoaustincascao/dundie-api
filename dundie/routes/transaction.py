@@ -67,7 +67,7 @@ async def list_transaction(
     # regular users can only see their own transactions
     if not current_user.superuser:
         query = query.where(
-            Transaction.user_id == current_user.id | Transaction.from_id == current_user.id
+            (Transaction.user_id == current_user.id) | (Transaction.from_id == current_user.id)
         )
 
     # Ordering based on &order_by=date (asc) or -date (desc)

@@ -23,7 +23,6 @@ from dundie.auth import ShowBalanceField
 router = APIRouter()
 
 @router.get("/",
-            dependencies=[AuthenticatedUser],
             response_model_exclude_unset=True # Omite os campos virtuais
             )
 async def list_users(
@@ -39,10 +38,20 @@ async def list_users(
         return JSONResponse(jsonable_encoder(users_with_balance))
     return users
 
-@router.get("/{username}/")
-async def get_user_by_username(*, username: str, session: Session = ActiveSession) -> UserResponse:
+@router.get("/{username}/",
+            response_model_exclude_unset=True
+            )
+async def get_user_by_username(
+    *, 
+    username: str, 
+    session: Session = ActiveSession,
+    show_balance_field: bool = ShowBalanceField
+) -> UserResponse | UserResponseWithBalance:
     """Get a user by username."""
     user = session.exec(select(User).where(User.username == username)).first()
+    if show_balance_field:
+            user_with_balance = parse_obj_as(UserResponseWithBalance, user)
+            return JSONResponse(jsonable_encoder(user_with_balance))
     return user
 
 
