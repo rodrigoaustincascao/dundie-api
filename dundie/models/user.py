@@ -1,9 +1,12 @@
 """User related data models."""
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from fastapi import HTTPException, status
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, SQLModel, Relationship
 from dundie.security import HashedPassword, get_password_hash
 from pydantic import BaseModel, root_validator
+
+if TYPE_CHECKING: # Evita o erro de import circular
+    from dundie.models.transaction import Transaction, Balance
 
 
 class User(SQLModel, table=True):
@@ -18,6 +21,28 @@ class User(SQLModel, table=True):
     name: str = Field(nullable=False)
     dept: str = Field(nullable=False)
     currency: str = Field(nullable=False)
+
+    # Populates a `.user` on `Transaction`
+    incomes: Optional[list["Transaction"]] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"primaryjoin": 'User.id == Transaction.user_id'},
+    )
+    # Populates a `.from_user` on `Transaction`
+    expenses: Optional[list["Transaction"]] = Relationship(
+        back_populates="from_user",
+        sa_relationship_kwargs={"primaryjoin": 'User.id == Transaction.from_id'},
+    )
+    # Populates a `.user` on `Balance`
+    _balance: Optional["Balance"] = Relationship(
+        back_populates="user",
+        sa_relationship_kwargs={"lazy": "dynamic"}
+    )
+    @property
+    def balance(self) -> int:
+        """Returns the current balance of the user"""
+        if (user_balance := self._balance.first()) is not None:  # pyright: ignore
+            return user_balance.value
+        return 0
 
     @property
     def superuser(self):
@@ -38,6 +63,16 @@ class UserResponse(BaseModel):
     bio: Optional[str] = None
     currency: str
 
+class UserResponseWithBalance(UserResponse):
+    balance: Optional[int] = None
+
+    @root_validator(pre=True)
+    def set_balance(cls, values):
+        instance = values['_sa_instance_state'].object
+        values['balance'] = instance.balance
+        return values
+
+
 class UserRequest(BaseModel):
     """Serializer for User request payload"""
 
@@ -49,6 +84,8 @@ class UserRequest(BaseModel):
     username: Optional[str] = None
     avatar: Optional[str] = None
     bio: Optional[str] = None
+
+   
 
     @root_validator(pre=True)
     def generate_username_if_not_set(cls, values):

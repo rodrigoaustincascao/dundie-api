@@ -1,20 +1,42 @@
 from sqlmodel import Session, select
 from fastapi import APIRouter, HTTPException, Body, BackgroundTasks
 from dundie.db import ActiveSession
-from dundie.models.user import User, UserResponse, UserRequest, UserProfilePatchReuest, UserPasswordPatchRequest
+from dundie.models.user import (
+    User, 
+    UserResponse, 
+    UserRequest, 
+    UserProfilePatchReuest, 
+    UserPasswordPatchRequest,
+    UserResponseWithBalance,
+)
 from typing import List
 from dundie.auth import AuthenticatedUser, SuperUser, CanChangeUserPassword
 from sqlalchemy.exc import IntegrityError
 from dundie.tasks.user import try_to_send_pwd_reset_email
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import parse_obj_as
+from dundie.auth import ShowBalanceField
 
 
 
 router = APIRouter()
 
-@router.get("/", dependencies=[AuthenticatedUser])
-async def list_users(*, session: Session = ActiveSession) -> List[UserResponse]:
+@router.get("/",
+            dependencies=[AuthenticatedUser],
+            response_model_exclude_unset=True # Omite os campos virtuais
+            )
+async def list_users(
+    *,
+    session: Session = ActiveSession,
+    show_balance_field: bool = ShowBalanceField
+    
+    ) -> List[UserResponse] | List[UserResponseWithBalance]:
     """List all users from database."""
     users = session.exec(select(User)).all()
+    if show_balance_field:
+        users_with_balance = parse_obj_as(List[UserResponseWithBalance], users)
+        return JSONResponse(jsonable_encoder(users_with_balance))
     return users
 
 @router.get("/{username}/")
