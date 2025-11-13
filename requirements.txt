@@ -71,7 +71,7 @@ python-dateutil==2.9.0.post0
     # via croniter
 python-jose[cryptography]==3.3.0
     # via -r requirements.in
-python-multipart==0.0.7
+python-multipart==0.0.20
     # via -r requirements.in
 pytz==2025.2
     # via croniter
@@ -108,6 +108,7 @@ typing-extensions==4.8.0
     #   fastapi
     #   pydantic
     #   sqlalchemy2-stubs
+    #   starlette
     #   typer
 uvicorn==0.28.0
     # via -r requirements.in
